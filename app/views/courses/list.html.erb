@@ -2,38 +2,53 @@
   <div class="row">
     <div class="col-sm-2">
       <%= render "shared/sidenav" %>
-
     </div>
     <div class="col-sm-10">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">选修课程</h3>
+          <div class="row">
+            <div class="col-xs-6">
+              <h3 class="panel-title">选课提示</h3>
+            </div>
+            <div class="col-xs-6 text-right">
+              <%= link_to "选课提示", prompt_courses_path, class: 'btn-sm btn-info' %>
+            </div>
+          </div>
         </div>
         <div class="panel-body" style="min-height: 450px">
+          <h3 class="panel-title" style="line-height: 2;">
+            <%= form_for @filter, url: list_courses_path do |f| %>
+              <%= f.label :course_time, '课程时间：' %>
+              <%= f.text_field :course_time, value: @filter.course_time, style: "color: black; line-height: 1.2;"%>
+              <%= f.label :course_type, ' 课程类型：' %>
+              <%= f.text_field :course_type, value: @filter.course_type, style: "color: black; line-height: 1.2;"%>
+              <%= f.label :name, ' 课程名字：'%>
+              <%= f.text_field :name, value: @filter.name, style: "color: black; line-height: 1.2;" %>
+              <%= f.submit " 查询", style: "color: black; line-height: 1.5;"%>
+            <% end %>
+          </h3>
           <table class="table table-striped table-hover">
             <thead>
-
-            <tr>
-              <th>课程编号</th>
-              <th>课程名称</th>
-              <th>课时/学分</th>
-              <th>限选</th>
-              <th>已选</th>
-              <th>课程属性</th>
-              <th>授课方式</th>
-              <th>考试方式</th>
-              <th>主讲教师</th>
-
-            </tr>
+              <tr>
+                <th>课程编号</th>
+                <th>课程名称</th>
+                <th>课时/学分</th>
+                <th>上课时间</th>
+                <th>限选</th>
+                <th>已选</th>
+                <th>课程属性</th>
+                <th>授课方式</th>
+                <th>考试方式</th>
+                <th>主讲教师</th>
+              </tr>
             </thead>
             <tbody>
-
-            <% @courses.each do |course| %>
+              <% @courses.each do |course| %>
                 <tr>
-
                   <td><%= course.course_code %></td>
                   <td><%= course.name %></td>
                   <td><%= course.credit %></td>
+                  <td><%= course.course_time %></td>
                   <td><%= course.limit_num %></td>
                   <td><%= course.student_num %></td>
                   <td><%= course.course_type %></td>
@@ -41,16 +56,13 @@
                   <td><%= course.exam_type %></td>
                   <td><%= course.teacher.name %></td>
                   <td><%= link_to "加入课程", select_course_path(course), class: 'btn-sm btn-info' %></td>
-
                 </tr>
-            <% end %>
+              <% end %>
             </tbody>
           </table>
-          <%= will_paginate @courses %>
+          <%= paginate @courses %>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-

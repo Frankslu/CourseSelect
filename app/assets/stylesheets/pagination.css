@@ -1,0 +1,30 @@
+.pagination .prev,
+.pagination .next {
+    display: inline-block;
+    padding: 5px 9px;
+    margin: 0 5px;
+    background-color: #eaeaea;
+    color: #333;
+    text-decoration: none;
+    border-radius: 3px;
+    border: none;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+.pagination .first,
+.pagination .last {
+    display: inline-block;
+    padding: 5px 9px;
+    margin: 0 5px;
+    background-color: #eaeaea;
+    color: #333;
+    text-decoration: none;
+    border-radius: 3px;
+    border: none;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+.pagination .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}

@@ -26,6 +26,10 @@ Rails.application.routes.draw do
     end
     collection do
       get :list
+      get :prompt
+      get :table
+
+      post :list
     end
   end
 

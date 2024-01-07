@@ -59,37 +59,117 @@ class CoursesController < ApplicationController
 
   def list
     #-------QiaoCode--------
-    @courses = Course.where(:open=>true).paginate(page: params[:page], per_page: 4)
+    def course_filter course, key, value
+      if value == '' or course[key].include?(value)
+        return true
+      else
+        return false
+      end
+    end
+
+    if request.post?
+      session[:filter] = course_params
+    end
+    @filter = Course.new(session[:filter])
+    @courses = Course.where(open: true)
     @course = @courses-current_user.courses
     tmp=[]
     @course.each do |course|
-      if course.open==true
+      condition = course.open==true
+      if request.post?
+        condition = condition && (course_filter(course, 'course_time', course_params['course_time']) &&
+          course_filter(course, 'course_type', course_params['course_type']) &&
+          course_filter(course, 'name', course_params['name']))
+      elsif session[:filter]
+        condition = condition && (course_filter(course, 'course_time', session[:filter]['course_time']) &&
+          course_filter(course, 'course_type', session[:filter]['course_type']) &&
+          course_filter(course, 'name', session[:filter]['name']))
+      end
+      if condition==true
         tmp<<course
       end
     end
-    @course=tmp
+    @courses = Kaminari.paginate_array(tmp).page(params[:page]).per(4)
   end
 
   def select
     @course=Course.find_by_id(params[:id])
+    if @course.limit_num!=nil and @course.limit_num<=@course.users.count
+      flash={:warning => "该课程已经选满"}
+      redirect_to list_courses_path, flash: flash
+      return
+    end
+    course_maybe_conflict = current_user.courses.where("course_time LIKE ?", "%#{@course.course_time.split('(').first}%")
+    if course_maybe_conflict.count>0
+      select_course_time = /\d+\-\d+/.match(@course.course_time).to_s
+      select_course_start_time = select_course_time.split('-').first.gsub(/\D/, '').to_i
+      select_course_end_time = select_course_time.split('-').last.gsub(/\D/, '').to_i
+      course_maybe_conflict.each do |course|
+        conflict_time = /\d+\-\d+/.match(course.course_time).to_s
+        conflict_start_time = conflict_time.split('-').first.gsub(/\D/, '').to_i
+        conflict_end_time = conflict_time.split('-').last.gsub(/\D/, '').to_i
+        if select_course_start_time<=conflict_end_time and select_course_end_time>=conflict_start_time
+          flash={:warning => "课程时间冲突：#{course.name}, 时间：#{course.course_time}"}
+          redirect_to list_courses_path, flash: flash
+          return
+        end
+      end
+    end
     current_user.courses<<@course
-    flash={:suceess => "成功选择课程: #{@course.name}"}
+    @course.update_attributes(student_num: @course.users.count + 1)
+    flash = { success: "<span style='color: green;'>成功选择课程: #{@course_name}</span>" }
     redirect_to courses_path, flash: flash
   end
 
   def quit
     @course=Course.find_by_id(params[:id])
+    @course.update_attributes(student_num: @course.users.count - 1)
     current_user.courses.delete(@course)
     flash={:success => "成功退选课程: #{@course.name}"}
     redirect_to courses_path, flash: flash
   end
 
+  def prompt
+    public_credit_values = current_user.courses.where("course_type LIKE ?", "%公共%").pluck(:credit)
+    @public_credit = public_credit_values.sum { |credit| credit.split("/").last.to_f }
+    major_credit_values = current_user.courses.where("course_type NOT LIKE ?", "%公共%").pluck(:credit)
+    @major_credit = major_credit_values.sum { |credit| credit.split("/").last.to_f }
+    @total_credit = @public_credit + @major_credit
+    @total_course = current_user.courses
+    @public_course = current_user.courses.where("course_type LIKE ?", "%公共%")
+    @major_course = current_user.courses.where("course_type NOT LIKE ?", "%公共%")
+  end
+
+  def table
+    # course_time内容是周一(1-2)
+    @days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    @times = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+
+    @course_table = {}
+    @days.each do |day|
+      @course_table[day] = {}
+      @times.each do |time|
+        @course_table[day][time] = []
+      end
+    end
+
+    courses = current_user.courses
+    courses.each do |course|
+      date = /(周.)/.match(course.course_time).to_s
+      time = /\d+\-\d+/.match(course.course_time)
+      start_time = time.to_s.split('-').first.gsub(/\D/, '')
+      end_time = time.to_s.split('-').last.gsub(/\D/, '')
+      (start_time.to_i..end_time.to_i).each do |time|
+        @course_table[date][time.to_s] << course.name
+      end
+    end
+  end
 
   #-------------------------for both teachers and students----------------------
 
   def index
-    @course=current_user.teaching_courses.paginate(page: params[:page], per_page: 4) if teacher_logged_in?
-    @course=current_user.courses.paginate(page: params[:page], per_page: 4) if student_logged_in?
+    @course=current_user.teaching_courses.page(params[:page]).per(4) if teacher_logged_in?
+    @course=current_user.courses.page(params[:page]).per(4) if student_logged_in?
   end
 
 

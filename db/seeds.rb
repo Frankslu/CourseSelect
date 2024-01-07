@@ -167,18 +167,10 @@ end
 
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# 重新统计每个课程的学生人数
+User.all.each do |user|
+  user.courses.each do |course|
+    course.student_num+=1
+    course.save
+  end
+end
